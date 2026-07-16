@@ -36,11 +36,11 @@ TAX_RATE = 0.10
 Sabotage = Literal["none", "bad_id", "wrong_order", "missing_field", "bad_type"]
 
 SABOTAGE_LABELS: dict[str, str] = {
-    "none": "正常な生成",
-    "bad_id": "納税者IDを12桁で出力（pattern違反）",
-    "wrong_order": "Income内の要素順序を入れ替え（sequence違反）",
-    "missing_field": "必須要素 TaxDue を欠落（構造違反）",
-    "bad_type": "GrossIncome に負数を出力（型違反）",
+    "none": "Correct mapping",
+    "bad_id": "Write the ID with 12 digits (pattern violation)",
+    "wrong_order": "Swap two elements inside Income (sequence violation)",
+    "missing_field": "Omit the required TaxDue element (structural violation)",
+    "bad_type": "Write a negative GrossIncome (type violation)",
 }
 
 

@@ -26,16 +26,18 @@ type FormState = {
   deductions: number;
 };
 
+// "Taro Yamada" is the standard placeholder name on Japanese forms —
+// the equivalent of "John Doe". No real person or filing is represented here.
 const INITIAL: FormState = {
-  taxpayer_name: "山村 敦",
+  taxpayer_name: "Taro Yamada",
   taxpayer_id: "1234567890123",
-  address: "東京都千代田区丸の内1-1-1",
+  address: "1-1-1 Marunouchi, Chiyoda-ku, Tokyo",
   tax_year: 2025,
   gross_income: 5_000_000,
   deductions: 1_200_000,
 };
 
-const yen = (n: number) => `¥${n.toLocaleString("ja-JP")}`;
+const yen = (n: number) => `¥${n.toLocaleString("en-US")}`;
 
 function Field({
   label,
@@ -72,7 +74,7 @@ export default function Demo() {
     fetch("/api/py/sabotage-options")
       .then((r) => r.json())
       .then((d) => setOptions(d.options))
-      .catch(() => setOptions([{ id: "none", label: "正常な生成" }]));
+      .catch(() => setOptions([{ id: "none", label: "Correct mapping" }]));
     fetch("/api/py/schema")
       .then((r) => r.json())
       .then((d) => setXsd(d.xsd))
@@ -93,15 +95,15 @@ export default function Demo() {
         setResult(null);
         setError(
           body?.detail
-            ? `入力検証エラー (Pydantic): ${JSON.stringify(body.detail)}`
-            : `リクエストが失敗しました (HTTP ${res.status})`
+            ? `Input rejected by Pydantic: ${JSON.stringify(body.detail)}`
+            : `Request failed (HTTP ${res.status})`
         );
         return;
       }
       setResult((await res.json()) as GenerateResponse);
     } catch {
       setError(
-        "バックエンドに接続できません。開発時は別ターミナルで `npm run api` を起動してください。"
+        "Cannot reach the backend. In local development, start it with `npm run api`."
       );
     } finally {
       setLoading(false);
@@ -110,7 +112,7 @@ export default function Demo() {
 
   useEffect(() => {
     void generate();
-    // 初回のみ自動生成
+    // generate once on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -132,20 +134,22 @@ export default function Demo() {
           PH AI Works — Technical Demo
         </p>
         <h1 className="mt-2 text-3xl font-bold text-slate-900 sm:text-4xl">
-          XML生成 &amp; スキーマ検証パイプライン
+          XML Generation &amp; Schema Validation
         </h1>
         <p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-600">
-          構造化データを仕様準拠のXMLへマッピングし、生成物をXSDスキーマで自動検証するデモです。
-          バックエンドはPython（Pydantic / lxml）で、ブラウザ上の操作がそのまま実際の生成・検証処理を呼び出しています。
+          Structured data is mapped onto a specification-compliant XML document, and the
+          generated file is then validated against an XSD schema. The backend is Python
+          (Pydantic / lxml) — every action on this page calls the real generation and
+          validation code, not a canned response.
         </p>
       </header>
 
       <section className="mb-8 grid gap-2 sm:grid-cols-4">
         {[
-          { n: "1", t: "JSON入力", d: "クライアントから送信" },
-          { n: "2", t: "Pydantic検証", d: "入力の型・制約チェック" },
-          { n: "3", t: "lxml でXML生成", d: "フィールドマッピング" },
-          { n: "4", t: "XSD検証", d: "生成物を仕様と照合" },
+          { n: "1", t: "JSON input", d: "Sent from the browser" },
+          { n: "2", t: "Pydantic", d: "Validates the input" },
+          { n: "3", t: "lxml", d: "Maps fields into XML" },
+          { n: "4", t: "XSD", d: "Validates the output" },
         ].map((s) => (
           <div
             key={s.n}
@@ -160,30 +164,33 @@ export default function Demo() {
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)]">
         <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="mb-4 text-base font-semibold text-slate-900">申告データ（入力）</h2>
+          <h2 className="mb-1 text-base font-semibold text-slate-900">Filing data</h2>
+          <p className="mb-4 text-xs text-slate-500">
+            Sample values. Edit any field and regenerate.
+          </p>
           <div className="space-y-4">
-            <Field label="氏名">
+            <Field label="Taxpayer name">
               <input
                 className={inputClass}
                 value={form.taxpayer_name}
                 onChange={(e) => setForm({ ...form, taxpayer_name: e.target.value })}
               />
             </Field>
-            <Field label="納税者ID" hint="13桁の数字（XSDで pattern 検証）">
+            <Field label="Taxpayer ID" hint="13 digits — enforced by an xs:pattern facet">
               <input
                 className={inputClass}
                 value={form.taxpayer_id}
                 onChange={(e) => setForm({ ...form, taxpayer_id: e.target.value })}
               />
             </Field>
-            <Field label="住所">
+            <Field label="Address">
               <input
                 className={inputClass}
                 value={form.address}
                 onChange={(e) => setForm({ ...form, address: e.target.value })}
               />
             </Field>
-            <Field label="年分">
+            <Field label="Tax year">
               <input
                 type="number"
                 className={inputClass}
@@ -191,7 +198,7 @@ export default function Demo() {
                 onChange={(e) => setForm({ ...form, tax_year: Number(e.target.value) })}
               />
             </Field>
-            <Field label={`総収入 (${yen(form.gross_income)})`}>
+            <Field label={`Gross income (${yen(form.gross_income)})`}>
               <input
                 type="number"
                 className={inputClass}
@@ -201,7 +208,7 @@ export default function Demo() {
                 }
               />
             </Field>
-            <Field label={`控除額 (${yen(form.deductions)})`}>
+            <Field label={`Deductions (${yen(form.deductions)})`}>
               <input
                 type="number"
                 className={inputClass}
@@ -213,8 +220,8 @@ export default function Demo() {
             </Field>
 
             <Field
-              label="生成モード"
-              hint="意図的にマッピングを壊し、XSD検証が本当に機能することを確認できます"
+              label="Generation mode"
+              hint="Inject a known mapping bug to confirm the schema validation is real"
             >
               <select
                 className={inputClass}
@@ -234,7 +241,7 @@ export default function Demo() {
               disabled={loading}
               className="w-full rounded-md bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-700 disabled:opacity-50"
             >
-              {loading ? "生成中..." : "XMLを生成"}
+              {loading ? "Generating..." : "Generate XML"}
             </button>
           </div>
         </section>
@@ -263,14 +270,14 @@ export default function Demo() {
                   {result.valid ? "✅ Valid against schema" : "❌ Invalid against schema"}
                 </span>
                 <span className="text-xs text-slate-600">
-                  tax_return.xsd で検証 / モード: {result.sabotage_label}
+                  Checked against tax_return.xsd — mode: {result.sabotage_label}
                 </span>
               </div>
 
               {!result.valid && (
                 <div className="rounded-lg border border-rose-200 bg-white p-4">
                   <h3 className="mb-2 text-sm font-semibold text-rose-800">
-                    XSDバリデーターが検出したエラー
+                    Reported by the XSD validator
                   </h3>
                   <ul className="space-y-1.5">
                     {result.errors.map((e, i) => (
@@ -287,14 +294,12 @@ export default function Demo() {
 
               <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
                 <div className="flex items-center justify-between border-b border-slate-200 px-4 py-2.5">
-                  <h3 className="text-sm font-semibold text-slate-900">
-                    生成されたXML
-                  </h3>
+                  <h3 className="text-sm font-semibold text-slate-900">Generated XML</h3>
                   <button
                     onClick={download}
                     className="rounded-md border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
                   >
-                    .xtx をダウンロード
+                    Download .xtx
                   </button>
                 </div>
                 <div className="overflow-x-auto">
@@ -306,20 +311,19 @@ export default function Demo() {
 
               <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
                 <div className="border-b border-slate-200 px-4 py-2.5">
-                  <h3 className="text-sm font-semibold text-slate-900">
-                    フィールドマッピング
-                  </h3>
+                  <h3 className="text-sm font-semibold text-slate-900">Field mapping</h3>
                   <p className="text-xs text-slate-500">
-                    入力キー → XPath上の配置先。実仕様ではこの表が数百行になります。
+                    Input key to its exact position in the document. A production mapping
+                    is this same table with several hundred rows.
                   </p>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs">
                     <thead className="bg-slate-50 text-slate-500">
                       <tr>
-                        <th className="px-4 py-2 font-medium">入力キー</th>
-                        <th className="px-4 py-2 font-medium">配置先 (XPath)</th>
-                        <th className="px-4 py-2 font-medium">値</th>
+                        <th className="px-4 py-2 font-medium">Input key</th>
+                        <th className="px-4 py-2 font-medium">Placement (XPath)</th>
+                        <th className="px-4 py-2 font-medium">Value</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -348,10 +352,10 @@ export default function Demo() {
                 className="flex w-full items-center justify-between px-4 py-2.5 text-left"
               >
                 <h3 className="text-sm font-semibold text-slate-900">
-                  検証に使用しているXSDスキーマ
+                  The XSD schema used for validation
                 </h3>
                 <span className="text-xs text-slate-500">
-                  {showXsd ? "隠す" : "表示"}
+                  {showXsd ? "Hide" : "Show"}
                 </span>
               </button>
               {showXsd && (
@@ -367,12 +371,23 @@ export default function Demo() {
       </div>
 
       <footer className="mt-10 rounded-lg border border-slate-200 bg-slate-50 px-5 py-4 text-xs leading-relaxed text-slate-600">
-        <p className="font-semibold text-slate-700">このデモについて</p>
+        <p className="font-semibold text-slate-700">About this demo</p>
         <p className="mt-1.5">
-          本デモのスキーマは技術実証のために独自に定義した簡略版であり、国税庁が公開するe-Tax仕様そのものではありません。
-          実際の申告フォーマットでは数百のフィールドを仕様書に従って正確な位置へ配置する必要がありますが、
-          「入力検証 → マッピング → スキーマ検証」というパイプラインと、生成物を機械的に検証する仕組みは同一です。
-          税率は一律10%に簡略化しています。
+          The schema here is an original, simplified structure written for this
+          demonstration. It is not the Japanese NTA e-Tax specification, and no NTA
+          material is reproduced. A real filing format requires several hundred fields to
+          be placed exactly as the published specification dictates — but the pipeline
+          (validate input, map, validate output) and the validation mechanism are the
+          same. The tax rate is simplified to a flat 10%. All sample data is fictional.
+        </p>
+        <p className="mt-2">
+          Source:{" "}
+          <a
+            className="font-medium text-sky-700 underline"
+            href="https://github.com/a-yama100/etax-xml-demo"
+          >
+            github.com/a-yama100/etax-xml-demo
+          </a>
         </p>
       </footer>
     </main>

@@ -78,9 +78,9 @@ Request:
 ```json
 {
   "data": {
-    "taxpayer_name": "山村 敦",
+    "taxpayer_name": "Taro Yamada",
     "taxpayer_id": "1234567890123",
-    "address": "東京都千代田区丸の内1-1-1",
+    "address": "1-1-1 Marunouchi, Chiyoda-ku, Tokyo",
     "tax_year": 2025,
     "gross_income": 5000000,
     "deductions": 1200000
@@ -131,6 +131,9 @@ required attributes.
 A production implementation maps several hundred fields against the published
 specification. The tax rate is simplified to a flat 10%. Neither changes the
 pipeline or the validation mechanism.
+
+All sample data is fictional. "Taro Yamada" is the standard placeholder name on
+Japanese forms — the equivalent of "John Doe".
 
 ---
 
