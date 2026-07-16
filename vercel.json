@@ -1,0 +1,12 @@
+{
+  "git": {
+    "deploymentEnabled": {
+      "main": true
+    }
+  },
+  "functions": {
+    "api/index.py": {
+      "includeFiles": "api/tax_return.xsd"
+    }
+  }
+}

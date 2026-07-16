@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Simplified tax-return schema for demonstration purposes.
+
+  This is NOT the Japanese NTA (e-Tax) specification. It is an original,
+  deliberately small schema that reproduces the structural characteristics
+  that matter when implementing a real filing format:
+
+    - strict element ordering       (xs:sequence)
+    - nested record blocks          (Header / Taxpayer / Income / Tax)
+    - lexical constraints on IDs    (xs:pattern)
+    - typed numeric fields          (xs:nonNegativeInteger)
+    - required attributes           (@version)
+
+  A production implementation maps several hundred fields against the
+  published specification; the validation mechanism is identical.
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+
+  <xs:simpleType name="TaxpayerIdType">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="[0-9]{13}"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="VersionType">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="[0-9]+\.[0-9]+"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:element name="TaxReturn">
+    <xs:complexType>
+      <xs:sequence>
+
+        <xs:element name="Header">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="TaxYear" type="xs:gYear"/>
+              <xs:element name="SoftwareId" type="xs:string"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+
+        <xs:element name="Taxpayer">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="TaxpayerName" type="xs:string"/>
+              <xs:element name="TaxpayerId" type="TaxpayerIdType"/>
+              <xs:element name="Address" type="xs:string"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+
+        <xs:element name="Income">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="GrossIncome" type="xs:nonNegativeInteger"/>
+              <xs:element name="Deductions" type="xs:nonNegativeInteger"/>
+              <xs:element name="TaxableIncome" type="xs:nonNegativeInteger"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+
+        <xs:element name="Tax">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="TaxDue" type="xs:nonNegativeInteger"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+
+      </xs:sequence>
+      <xs:attribute name="version" type="VersionType" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>
