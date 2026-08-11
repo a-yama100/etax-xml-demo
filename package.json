@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 3233",
+    "dev": "node D:/サイト管理/dev-server.mjs",
     "api": "uvicorn index:app --app-dir api --reload --port 8001",
     "build": "next build",
     "start": "next start",
