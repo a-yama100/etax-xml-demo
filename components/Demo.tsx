@@ -170,28 +170,28 @@ export default function Demo() {
           </p>
           <div className="space-y-4">
             <Field label="Taxpayer name">
-              <input
+              <input aria-label="Taxpayer name" name="taxpayer_name" autoComplete="name" maxLength={2048}
                 className={inputClass}
                 value={form.taxpayer_name}
                 onChange={(e) => setForm({ ...form, taxpayer_name: e.target.value })}
               />
             </Field>
             <Field label="Taxpayer ID" hint="13 digits — enforced by an xs:pattern facet">
-              <input
+              <input aria-label="Taxpayer ID" name="taxpayer_id" autoComplete="off" maxLength={2048}
                 className={inputClass}
                 value={form.taxpayer_id}
                 onChange={(e) => setForm({ ...form, taxpayer_id: e.target.value })}
               />
             </Field>
             <Field label="Address">
-              <input
+              <input aria-label="Address" name="address" autoComplete="street-address" maxLength={2048}
                 className={inputClass}
                 value={form.address}
                 onChange={(e) => setForm({ ...form, address: e.target.value })}
               />
             </Field>
             <Field label="Tax year">
-              <input
+              <input aria-label="Tax year" name="tax_year"
                 type="number"
                 className={inputClass}
                 value={form.tax_year}
@@ -199,7 +199,7 @@ export default function Demo() {
               />
             </Field>
             <Field label={`Gross income (${yen(form.gross_income)})`}>
-              <input
+              <input aria-label="Gross income" name="gross_income"
                 type="number"
                 className={inputClass}
                 value={form.gross_income}
@@ -209,7 +209,7 @@ export default function Demo() {
               />
             </Field>
             <Field label={`Deductions (${yen(form.deductions)})`}>
-              <input
+              <input aria-label="Deductions" name="deductions"
                 type="number"
                 className={inputClass}
                 value={form.deductions}
@@ -223,7 +223,7 @@ export default function Demo() {
               label="Generation mode"
               hint="Inject a known mapping bug to confirm the schema validation is real"
             >
-              <select
+              <select aria-label="Generation mode" name="generation_mode"
                 className={inputClass}
                 value={sabotage}
                 onChange={(e) => setSabotage(e.target.value)}
