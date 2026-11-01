@@ -11,3 +11,11 @@ body {
   font-family: ui-sans-serif, system-ui, "Hiragino Kaku Gothic ProN", "Yu Gothic",
     "Meiryo", sans-serif;
 }
+
+/* Tailwind 4 では、ボタンのカーソルは矢印のままなので、指の形にする */
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
+}
