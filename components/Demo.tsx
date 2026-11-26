@@ -32,7 +32,8 @@ const INITIAL: FormState = {
   taxpayer_name: "Taro Yamada",
   taxpayer_id: "1234567890123",
   address: "1-1-1 Marunouchi, Chiyoda-ku, Tokyo",
-  tax_year: 2025,
+  // 申告の対象は前の年。固定の年にすると年が変わるたびに古くなるので、今の年から計算する
+  tax_year: new Date().getFullYear() - 1,
   gross_income: 5_000_000,
   deductions: 1_200_000,
 };
@@ -103,7 +104,7 @@ export default function Demo() {
       setResult((await res.json()) as GenerateResponse);
     } catch {
       setError(
-        "Cannot reach the backend. In local development, start it with `npm run api`."
+        "Cannot reach the server. Please try again in a moment."
       );
     } finally {
       setLoading(false);
@@ -131,16 +132,28 @@ export default function Demo() {
     <main className="mx-auto max-w-6xl px-5 py-10">
       <header className="mb-8">
         <p className="text-xs font-semibold uppercase tracking-widest text-sky-600">
-          PH AI Works — Technical Demo
+          <a href="https://www.phaiworks.com/en" className="hover:text-sky-800 hover:underline">
+            PH AI Works
+          </a>{" "}
+          — Technical Demo
         </p>
         <h1 className="mt-2 text-3xl font-bold text-slate-900 sm:text-4xl">
           XML Generation &amp; Schema Validation
         </h1>
-        <p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-600">
-          Structured data is mapped onto a specification-compliant XML document, and the
-          generated file is then validated against an XSD schema. The backend is Python
-          (Pydantic / lxml) — every action on this page calls the real generation and
-          validation code, not a canned response.
+        {/* eslint-disable-next-line @next/next/no-img-element -- 同じ origin の静的ファイル。next/image の最適化は使わない */}
+        <img
+          src="/media/hero.webp"
+          alt="Illustration of form data flowing into a structured document that passes a schema check gate, with one wrong block caught and set aside"
+          width={1600}
+          height={679}
+          className="mt-5 aspect-[1600/679] w-full rounded-xl object-cover"
+        />
+        <p className="mt-5 max-w-3xl text-sm leading-relaxed text-slate-600">
+          This demo turns form data into an XML document that follows a fixed
+          specification, then checks the finished file against an XSD schema (the
+          rulebook for the format). The backend is written in Python (Pydantic and lxml).
+          Every button on this page runs the real generation and checking code; nothing
+          is pre-recorded.
         </p>
       </header>
 
@@ -166,7 +179,7 @@ export default function Demo() {
         <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="mb-1 text-base font-semibold text-slate-900">Filing data</h2>
           <p className="mb-4 text-xs text-slate-500">
-            Sample values. Edit any field and regenerate.
+            These are sample values. Change any field and click Generate XML again.
           </p>
           <div className="space-y-4">
             <Field label="Taxpayer name">
@@ -176,7 +189,7 @@ export default function Demo() {
                 onChange={(e) => setForm({ ...form, taxpayer_name: e.target.value })}
               />
             </Field>
-            <Field label="Taxpayer ID" hint="13 digits — enforced by an xs:pattern facet">
+            <Field label="Taxpayer ID" hint="13 digits. The schema rejects any other length (xs:pattern).">
               <input aria-label="Taxpayer ID" name="taxpayer_id" autoComplete="off" maxLength={2048}
                 className={inputClass}
                 value={form.taxpayer_id}
@@ -221,7 +234,7 @@ export default function Demo() {
 
             <Field
               label="Generation mode"
-              hint="Inject a known mapping bug to confirm the schema validation is real"
+              hint="Add a known mapping bug on purpose to see the schema check catch it"
             >
               <select aria-label="Generation mode" name="generation_mode"
                 className={inputClass}
@@ -313,8 +326,8 @@ export default function Demo() {
                 <div className="border-b border-slate-200 px-4 py-2.5">
                   <h3 className="text-sm font-semibold text-slate-900">Field mapping</h3>
                   <p className="text-xs text-slate-500">
-                    Input key to its exact position in the document. A production mapping
-                    is this same table with several hundred rows.
+                    Where each input field is placed in the document. A real filing format
+                    uses the same kind of table, with several hundred rows.
                   </p>
                 </div>
                 <div className="overflow-x-auto">
@@ -373,12 +386,12 @@ export default function Demo() {
       <footer className="mt-10 rounded-lg border border-slate-200 bg-slate-50 px-5 py-4 text-xs leading-relaxed text-slate-600">
         <p className="font-semibold text-slate-700">About this demo</p>
         <p className="mt-1.5">
-          The schema here is an original, simplified structure written for this
-          demonstration. It is not the Japanese NTA e-Tax specification, and no NTA
-          material is reproduced. A real filing format requires several hundred fields to
-          be placed exactly as the published specification dictates — but the pipeline
-          (validate input, map, validate output) and the validation mechanism are the
-          same. The tax rate is simplified to a flat 10%. All sample data is fictional.
+          The schema here is a simplified structure written only for this demo. It is not
+          the Japanese National Tax Agency (NTA) e-Tax specification, and no NTA material
+          is copied. A real filing format needs several hundred fields, each placed
+          exactly where the published specification says. The process, though, is the
+          same: check the input, map it into XML, then check the output. The tax rate is
+          simplified to a flat 10%. All sample data is fictional.
         </p>
         <p className="mt-2">
           Source:{" "}
