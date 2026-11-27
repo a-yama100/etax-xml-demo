@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { SABOTAGE_LABELS_JA, SAMPLE, TEXT, type Lang } from "@/lib/content";
 
 type MappingRow = { source: string; target: string; value: string };
 type XsdError = { line: number | null; message: string };
@@ -26,19 +27,19 @@ type FormState = {
   deductions: number;
 };
 
-// "Taro Yamada" is the standard placeholder name on Japanese forms —
-// the equivalent of "John Doe". No real person or filing is represented here.
-const INITIAL: FormState = {
-  taxpayer_name: "Taro Yamada",
+// 見本の氏名と住所は言語ごと（lib/content.ts の SAMPLE。どちらも架空）
+const initialForm = (lang: Lang): FormState => ({
+  taxpayer_name: SAMPLE[lang].taxpayer_name,
   taxpayer_id: "1234567890123",
-  address: "1-1-1 Marunouchi, Chiyoda-ku, Tokyo",
+  address: SAMPLE[lang].address,
   // 申告の対象は前の年。固定の年にすると年が変わるたびに古くなるので、今の年から計算する
   tax_year: new Date().getFullYear() - 1,
   gross_income: 5_000_000,
   deductions: 1_200_000,
-};
+});
 
-const yen = (n: number) => `¥${n.toLocaleString("en-US")}`;
+const yen = (lang: Lang, n: number) =>
+  lang === "ja" ? `${n.toLocaleString("ja-JP")}円` : `¥${n.toLocaleString("en-US")}`;
 
 function Field({
   label,
@@ -61,8 +62,13 @@ function Field({
 const inputClass =
   "w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100";
 
-export default function Demo() {
-  const [form, setForm] = useState<FormState>(INITIAL);
+// 日本語（/）と英語（/en）の共通のページ
+export default function Demo({ lang }: { lang: Lang }) {
+  const t = TEXT[lang];
+  // API の生成のモードの表示名は英語なので、日本語のページでは id で置き換える
+  const modeLabel = (id: string, apiLabel: string) =>
+    lang === "ja" ? (SABOTAGE_LABELS_JA[id] ?? apiLabel) : apiLabel;
+  const [form, setForm] = useState<FormState>(() => initialForm(lang));
   const [sabotage, setSabotage] = useState("none");
   const [options, setOptions] = useState<SabotageOption[]>([]);
   const [result, setResult] = useState<GenerateResponse | null>(null);
@@ -75,7 +81,7 @@ export default function Demo() {
     fetch("/api/py/sabotage-options")
       .then((r) => r.json())
       .then((d) => setOptions(d.options))
-      .catch(() => setOptions([{ id: "none", label: "Correct mapping" }]));
+      .catch(() => setOptions([{ id: "none", label: t.fallbackMode }]));
     fetch("/api/py/schema")
       .then((r) => r.json())
       .then((d) => setXsd(d.xsd))
@@ -96,20 +102,18 @@ export default function Demo() {
         setResult(null);
         setError(
           body?.detail
-            ? `Input rejected by Pydantic: ${JSON.stringify(body.detail)}`
-            : `Request failed (HTTP ${res.status})`
+            ? `${t.inputRejected}${JSON.stringify(body.detail)}`
+            : t.requestFailed(res.status)
         );
         return;
       }
       setResult((await res.json()) as GenerateResponse);
     } catch {
-      setError(
-        "Cannot reach the server. Please try again in a moment."
-      );
+      setError(t.unreachable);
     } finally {
       setLoading(false);
     }
-  }, [form, sabotage]);
+  }, [form, sabotage, t]);
 
   useEffect(() => {
     void generate();
@@ -131,44 +135,45 @@ export default function Demo() {
   return (
     <main className="mx-auto max-w-6xl px-5 py-10">
       <header className="mb-8">
-        <p className="text-xs font-semibold uppercase tracking-widest text-sky-600">
-          <a href="https://www.phaiworks.com/en" className="hover:text-sky-800 hover:underline">
-            PH AI Works
-          </a>{" "}
-          — Technical Demo
-        </p>
+        <div className="flex items-start justify-between gap-3">
+          <p className="text-xs font-semibold uppercase tracking-widest text-sky-600">
+            <a href={t.phaiworksUrl} className="hover:text-sky-800 hover:underline">
+              PH AI Works
+            </a>{" "}
+            — {t.brandSuffix}
+          </p>
+          <a
+            href={t.toggleHref}
+            hrefLang={lang === "ja" ? "en" : "ja"}
+            lang={lang === "ja" ? "en" : "ja"}
+            className="shrink-0 rounded-md border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-700 transition hover:border-sky-500 hover:text-sky-700"
+          >
+            {t.toggle}
+          </a>
+        </div>
         <h1 className="mt-2 text-3xl font-bold text-slate-900 sm:text-4xl">
-          XML Generation &amp; Schema Validation
+          {t.h1}
         </h1>
         {/* eslint-disable-next-line @next/next/no-img-element -- 同じ origin の静的ファイル。next/image の最適化は使わない */}
         <img
           src="/media/hero.webp"
-          alt="Illustration of form data flowing into a structured document that passes a schema check gate, with one wrong block caught and set aside"
+          alt={t.heroImageAlt}
           width={1600}
           height={679}
           className="mt-5 aspect-[1600/679] w-full rounded-xl object-cover"
         />
         <p className="mt-5 text-sm leading-relaxed text-slate-600">
-          This demo turns form data into an XML document that follows a fixed
-          specification, then checks the finished file against an XSD schema (the
-          rulebook for the format). The backend is written in Python (Pydantic and lxml).
-          Every button on this page runs the real generation and checking code; nothing
-          is pre-recorded.
+          {t.lead}
         </p>
       </header>
 
       <section className="mb-8 grid gap-2 sm:grid-cols-4">
-        {[
-          { n: "1", t: "JSON input", d: "Sent from the browser" },
-          { n: "2", t: "Pydantic", d: "Validates the input" },
-          { n: "3", t: "lxml", d: "Maps fields into XML" },
-          { n: "4", t: "XSD", d: "Validates the output" },
-        ].map((s) => (
+        {t.steps.map((s, i) => ({ n: String(i + 1), ...s })).map((s) => (
           <div
             key={s.n}
             className="rounded-lg border border-slate-200 bg-white px-4 py-3 shadow-sm"
           >
-            <span className="text-xs font-bold text-sky-600">STEP {s.n}</span>
+            <span className="text-xs font-bold text-sky-600">{t.stepLabel} {s.n}</span>
             <p className="mt-1 text-sm font-semibold text-slate-800">{s.t}</p>
             <p className="text-xs text-slate-500">{s.d}</p>
           </div>
@@ -177,42 +182,42 @@ export default function Demo() {
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)]">
         <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="mb-1 text-base font-semibold text-slate-900">Filing data</h2>
+          <h2 className="mb-1 text-base font-semibold text-slate-900">{t.formTitle}</h2>
           <p className="mb-4 text-xs text-slate-500">
-            These are sample values. Change any field and click Generate XML again.
+            {t.formLead}
           </p>
           <div className="space-y-4">
-            <Field label="Taxpayer name">
-              <input aria-label="Taxpayer name" name="taxpayer_name" autoComplete="name" maxLength={2048}
+            <Field label={t.name}>
+              <input aria-label={t.name} name="taxpayer_name" autoComplete="name" maxLength={2048}
                 className={inputClass}
                 value={form.taxpayer_name}
                 onChange={(e) => setForm({ ...form, taxpayer_name: e.target.value })}
               />
             </Field>
-            <Field label="Taxpayer ID" hint="13 digits. The schema rejects any other length (xs:pattern).">
-              <input aria-label="Taxpayer ID" name="taxpayer_id" autoComplete="off" maxLength={2048}
+            <Field label={t.id} hint={t.idHint}>
+              <input aria-label={t.id} name="taxpayer_id" autoComplete="off" maxLength={2048}
                 className={inputClass}
                 value={form.taxpayer_id}
                 onChange={(e) => setForm({ ...form, taxpayer_id: e.target.value })}
               />
             </Field>
-            <Field label="Address">
-              <input aria-label="Address" name="address" autoComplete="street-address" maxLength={2048}
+            <Field label={t.address}>
+              <input aria-label={t.address} name="address" autoComplete="street-address" maxLength={2048}
                 className={inputClass}
                 value={form.address}
                 onChange={(e) => setForm({ ...form, address: e.target.value })}
               />
             </Field>
-            <Field label="Tax year">
-              <input aria-label="Tax year" name="tax_year"
+            <Field label={t.taxYear}>
+              <input aria-label={t.taxYear} name="tax_year"
                 type="number"
                 className={inputClass}
                 value={form.tax_year}
                 onChange={(e) => setForm({ ...form, tax_year: Number(e.target.value) })}
               />
             </Field>
-            <Field label={`Gross income (${yen(form.gross_income)})`}>
-              <input aria-label="Gross income" name="gross_income"
+            <Field label={`${t.gross} (${yen(lang, form.gross_income)})`}>
+              <input aria-label={t.gross} name="gross_income"
                 type="number"
                 className={inputClass}
                 value={form.gross_income}
@@ -221,8 +226,8 @@ export default function Demo() {
                 }
               />
             </Field>
-            <Field label={`Deductions (${yen(form.deductions)})`}>
-              <input aria-label="Deductions" name="deductions"
+            <Field label={`${t.deductions} (${yen(lang, form.deductions)})`}>
+              <input aria-label={t.deductions} name="deductions"
                 type="number"
                 className={inputClass}
                 value={form.deductions}
@@ -233,17 +238,17 @@ export default function Demo() {
             </Field>
 
             <Field
-              label="Generation mode"
-              hint="Add a known mapping bug on purpose to see the schema check catch it"
+              label={t.mode}
+              hint={t.modeHint}
             >
-              <select aria-label="Generation mode" name="generation_mode"
+              <select aria-label={t.mode} name="generation_mode"
                 className={inputClass}
                 value={sabotage}
                 onChange={(e) => setSabotage(e.target.value)}
               >
                 {options.map((o) => (
                   <option key={o.id} value={o.id}>
-                    {o.label}
+                    {modeLabel(o.id, o.label)}
                   </option>
                 ))}
               </select>
@@ -254,7 +259,7 @@ export default function Demo() {
               disabled={loading}
               className="w-full rounded-md bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-700 disabled:opacity-50"
             >
-              {loading ? "Generating..." : "Generate XML"}
+              {loading ? t.generating : t.generate}
             </button>
           </div>
         </section>
@@ -280,23 +285,23 @@ export default function Demo() {
                     result.valid ? "text-emerald-700" : "text-rose-700"
                   }`}
                 >
-                  {result.valid ? "✅ Valid against schema" : "❌ Invalid against schema"}
+                  {result.valid ? t.valid : t.invalid}
                 </span>
                 <span className="text-xs text-slate-600">
-                  Checked against tax_return.xsd — mode: {result.sabotage_label}
+                  {t.checkedAgainst(modeLabel(result.sabotage, result.sabotage_label))}
                 </span>
               </div>
 
               {!result.valid && (
                 <div className="rounded-lg border border-rose-200 bg-white p-4">
                   <h3 className="mb-2 text-sm font-semibold text-rose-800">
-                    Reported by the XSD validator
+                    {t.validatorTitle}
                   </h3>
                   <ul className="space-y-1.5">
                     {result.errors.map((e, i) => (
                       <li key={i} className="font-mono text-xs text-slate-700">
                         <span className="mr-2 rounded bg-rose-100 px-1.5 py-0.5 text-rose-700">
-                          line {e.line ?? "-"}
+                          {t.line(e.line ?? "-")}
                         </span>
                         {e.message}
                       </li>
@@ -307,12 +312,12 @@ export default function Demo() {
 
               <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
                 <div className="flex items-center justify-between border-b border-slate-200 px-4 py-2.5">
-                  <h3 className="text-sm font-semibold text-slate-900">Generated XML</h3>
+                  <h3 className="text-sm font-semibold text-slate-900">{t.generatedXml}</h3>
                   <button
                     onClick={download}
                     className="rounded-md border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
                   >
-                    Download .xtx
+                    {t.download}
                   </button>
                 </div>
                 <div className="overflow-x-auto">
@@ -324,19 +329,18 @@ export default function Demo() {
 
               <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
                 <div className="border-b border-slate-200 px-4 py-2.5">
-                  <h3 className="text-sm font-semibold text-slate-900">Field mapping</h3>
+                  <h3 className="text-sm font-semibold text-slate-900">{t.mappingTitle}</h3>
                   <p className="text-xs text-slate-500">
-                    Where each input field is placed in the document. A real filing format
-                    uses the same kind of table, with several hundred rows.
+                    {t.mappingLead}
                   </p>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs">
                     <thead className="bg-slate-50 text-slate-500">
                       <tr>
-                        <th className="px-4 py-2 font-medium">Input key</th>
-                        <th className="px-4 py-2 font-medium">Placement (XPath)</th>
-                        <th className="px-4 py-2 font-medium">Value</th>
+                        <th className="px-4 py-2 font-medium">{t.colKey}</th>
+                        <th className="px-4 py-2 font-medium">{t.colTarget}</th>
+                        <th className="px-4 py-2 font-medium">{t.colValue}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -365,10 +369,10 @@ export default function Demo() {
                 className="flex w-full items-center justify-between px-4 py-2.5 text-left"
               >
                 <h3 className="text-sm font-semibold text-slate-900">
-                  The XSD schema used for validation
+                  {t.xsdTitle}
                 </h3>
                 <span className="text-xs text-slate-500">
-                  {showXsd ? "Hide" : "Show"}
+                  {showXsd ? t.hide : t.show}
                 </span>
               </button>
               {showXsd && (
@@ -384,17 +388,12 @@ export default function Demo() {
       </div>
 
       <footer className="mt-10 rounded-lg border border-slate-200 bg-slate-50 px-5 py-4 text-xs leading-relaxed text-slate-600">
-        <p className="font-semibold text-slate-700">About this demo</p>
+        <p className="font-semibold text-slate-700">{t.aboutTitle}</p>
         <p className="mt-1.5">
-          The schema here is a simplified structure written only for this demo. It is not
-          the Japanese National Tax Agency (NTA) e-Tax specification, and no NTA material
-          is copied. A real filing format needs several hundred fields, each placed
-          exactly where the published specification says. The process, though, is the
-          same: check the input, map it into XML, then check the output. The tax rate is
-          simplified to a flat 10%. All sample data is fictional.
+          {t.about}
         </p>
         <p className="mt-2">
-          Source:{" "}
+          {t.source}{" "}
           <a
             className="font-medium text-sky-700 underline"
             href="https://github.com/a-yama100/etax-xml-demo"
