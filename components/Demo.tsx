@@ -148,7 +148,7 @@ export default function Demo() {
           height={679}
           className="mt-5 aspect-[1600/679] w-full rounded-xl object-cover"
         />
-        <p className="mt-5 max-w-3xl text-sm leading-relaxed text-slate-600">
+        <p className="mt-5 text-sm leading-relaxed text-slate-600">
           This demo turns form data into an XML document that follows a fixed
           specification, then checks the finished file against an XSD schema (the
           rulebook for the format). The backend is written in Python (Pydantic and lxml).
